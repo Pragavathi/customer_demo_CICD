@@ -1,0 +1,1395 @@
+{
+  "name": "Team1_HTML_Complete_WithNotes",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -5240,
+        340
+      ],
+      "id": "40f70723-07d1-4530-9b1b-df201f51792c",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "const themes = [\n  \"Unexpected Foods That Disrupt Thyroid Function\",\n  \"Habits That Secretly Help or Harm Your Thyroid\",\n  \"How Stress and Cortisol Mess With Your Thyroid\",\n  \"Hidden Deficiencies That Trigger Hypothyroidism\",\n  \"Early Warning Signs Most People Ignore\",\n  \"Uncommon Thyroid-Supporting Herbs and Nutrients\",\n  \"Daily Rituals to Naturally Boost Energy and Metabolism\",\n  \"Thyroid-Related Weight Gain: What No One Talks About\",\n  \"Gut Health and Its Link to Thyroid Imbalance\",\n  \"Cold Hands, Hair Loss, Brain Fog? What They Really Mean\"\n];\n\nconst lastIndex = $json.last_index || 0;\n\nconst first = themes[lastIndex % themes.length];\nconst second = themes[(lastIndex + 1) % themes.length];\n\nconst newIndex = (lastIndex + 2) % themes.length;\n\nreturn [\n  {\n    json: {\n      themes: [first, second],\n      newIndex\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4780,
+        240
+      ],
+      "id": "30596d86-69d2-4108-aa9f-31a0eae8a8eb",
+      "name": "Random topic selection"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT last_index FROM team1_thyrobalance_theme_rotation\nWHERE category = 'thyroid-marketing';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -5000,
+        240
+      ],
+      "id": "a9e073f2-2c5f-4c90-8bf5-9c54b9d7ba25",
+      "name": "Fetch lastIndex",
+      "credentials": {
+        "postgres": {
+          "id": "FjNPtrqUWWw244V3",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE team1_thyrobalance_theme_rotation\nSET last_index = {{ $json.newIndex }}, updated_at = NOW()\nWHERE category = 'thyroid-marketing';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -4560,
+        240
+      ],
+      "id": "fc77bc7d-64d8-4985-baa9-5ded5305a050",
+      "name": "update fetched lastIndex",
+      "credentials": {
+        "postgres": {
+          "id": "FjNPtrqUWWw244V3",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -4260,
+        460
+      ],
+      "id": "1b9bb50d-ab21-4e56-ba77-830dd31aa985",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "IPvO2VIWDd5v5ZXf",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $json.output || '';\n\n// Helper function to extract content by label\nfunction extractSection(label, text) {\n  const pattern = new RegExp(`\\\\*\\\\*${label}:\\\\*\\\\*\\\\s*([\\\\s\\\\S]*?)(?=\\\\*\\\\*|$)`, 'i');\n  const match = text.match(pattern);\n  return match ? match[1].trim() : '';\n}\n\n// Extract updated fields\nconst heading = extractSection('Main Heading', input);\nconst subheading = extractSection('Subheading', input);\nconst link = extractSection('Link', input);\n\n// (Optional) Extract legacy fields for backward compatibility\nconst hook = extractSection('Hook', input);\nconst tip = extractSection('Tip', input);\nconst cta = extractSection('CTA', input);\n\nreturn [\n  {\n    json: {\n      heading,\n      subheading,\n      link,\n      hook,\n      tip,\n      cta\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3980,
+        240
+      ],
+      "id": "a9416762-571e-440d-9cd1-a0b47f2a805b",
+      "name": "Code to extract hook, tip, CTA"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -3680,
+        140
+      ],
+      "id": "8c7d4e4f-9c16-4a3e-babb-30b88ddfd647",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "IPvO2VIWDd5v5ZXf",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a creative health content marketer for Thyro Balance — a wellness app that helps men and women naturally manage thyroid health and feel like themselves again.\n\nYour job is to create highly engaging, non-generic content that:\n\t•\t💥 Shares mind-blowing, lesser-known thyroid health facts or tips\n\t•\t❌ Avoids anything obvious or overused (like “eat healthy” or “get enough sleep”)\n\t•\t✅ Feels personal, trustworthy, and empowering\nTopic: {{ $('Random topic selection').item.json.themes }}\n\n\n✍️ Generate a 3-part snippet:\n\t1.\t🎯 Hook: 1-sentence with fear inducing, data centric and makes the reader stop scrolling\n\t2.\t💡 Tip: 2–3 sentences with a unique insight, uncommon fact, or myth-buster\n\t3.\t📣 CTA: 1 sentence — why the reader should try the Thyro Balance app\n\n\nYou are creating branded marketing banners for a health app called Thyro Balance.\nUse the following content to generate three short text elements for a social media image:\n\t1.\tMain Heading: A bold, catchy title (10–14 words max),  which is deep fear-inducing, scroll-stopping and derived from the “hook” content. Capitalize most words.\n\t2.\tSubheading: Catchy title (7–10 words max) derived from the “main heading” content.\n\t3.\tLink: Add this exact text:  thyrobalance.numpyninja.com\n\n\n💬 Tone: Friendly, trustworthy, empowering — like talking to a friend who’s done their research.\n\n✨ Output Format:\n\n**Hook:** <your eye-catching hook>\n\n**Tip:** <your unique insight or actionable fact>\n\n**CTA:** <your reason to download or try Thyro Balance>\n\n**Main Heading:** <your eye-catching Main Heading>\n\n**Subheading:** <sub heading>\n\n**Link:** <link for Thyro Balance>",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -4340,
+        240
+      ],
+      "id": "54fff469-fcbe-4f49-b989-62cf90439479",
+      "name": "Content Generating AI Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create a 1080×1080 Instagram/Facebook background image.\n\nDesign:\n\nFill the entire canvas with a light pastel watercolor background.\n\nUse a random professional pastel color dynamically chosen from:\n\nPastel Yellow (#FFF1B8)\n\nPastel Orange (#FFD6A5)\n\nPastel Coral (#FFB5A7)\n\nPastel Pink-Red (#FF9AA2)\n\nPastel Lavender (#D5A6E5)\n\nThe background must be light and airy — absolutely no black, dark, or harsh base colors.\n\nThe watercolor should appear as a soft, blended texture that covers the canvas, not as a single spot on a dark field.\n\nStyle & Mood:\n\nClean, modern, minimalist.\n\nEmpowering, wellness-oriented pastel look.\n\nBalanced spacing, editorial quality, crisp output.\n\nHard Constraints:\n\n❌ No text, no placeholders, no logos.\n\n❌ No people, icons, medical gear, or stock photos.\n\n❌ No black or dark backgrounds.\n\n✅ The entire canvas must be a light pastel watercolor fill at exactly 1080×1080.\n\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -3760,
+        -80
+      ],
+      "id": "92d1d240-a853-4d19-ab5c-60d486b4e208",
+      "name": "Image Generating AI Agent"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://image-generation-server-skillnewyork.replit.app/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": ""
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3400,
+        -80
+      ],
+      "id": "65b213dc-37a1-4912-bbec-df7939163873",
+      "name": "Gemini API HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "image_base64",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -3180,
+        -80
+      ],
+      "id": "086cac8a-52af-419d-9dd6-8f5597b889ec",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const hook = item.json.hook || '';\n  const tip = item.json.tip || '';\n  const cta = item.json.cta || '';\n\n  // Build a clean HTML message\n  let caption = `\n<b>💡 ${hook}</b>\n\n📘 ${tip}\n\n🔁 <i>${cta}</i>\n  `.trim();\n\n  // Truncate if necessary\n  const MAX_CAPTION_LENGTH = 1024;\n  if (caption.length > MAX_CAPTION_LENGTH) {\n    caption = caption.slice(0, MAX_CAPTION_LENGTH - 3) + '...';\n  }\n\n  return {\n    json: {\n      caption,\n    },\n    binary: item.binary\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        120
+      ],
+      "id": "49de2cac-ca25-4ffb-8ae9-3ae52fc82155",
+      "name": "Format before sending to Telegram"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "7926868505",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "={{ $json.caption }}\n",
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1160,
+        120
+      ],
+      "id": "baffd716-b5a8-4f07-8fef-760a69ee0fed",
+      "name": "Send a photo message",
+      "webhookId": "bc381a5a-1350-48da-b3af-b87aa71d44d5",
+      "credentials": {
+        "telegramApi": {
+          "id": "M5TtEcvESPyZpcd6",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://image-ninja-host-skillnewyork.replit.app/api/upload",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "numpyninja"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        100
+      ],
+      "id": "ab99abb0-60c0-4170-bc1d-ed128ef41cbd",
+      "name": "Numpy server Hosting"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v22.0",
+        "node": "17841476174456333",
+        "edge": "media_publish",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        260
+      ],
+      "id": "c9377e57-bf72-4432-897b-ec3a4a1b294a",
+      "name": "instagram publish",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "XaCLsORSaW1Qq9ZW",
+          "name": "Facebook Graph account - Shruti"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "=v22.0",
+        "node": "17841476174456333",
+        "edge": "media",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "image_url",
+                "value": "={{ $json.data }}"
+              },
+              {
+                "name": "caption",
+                "value": "={{$json.caption}}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        860,
+        260
+      ],
+      "id": "80cb26a4-723a-4ed3-aadd-a6dfad09ac75",
+      "name": "instagram upload",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "XaCLsORSaW1Qq9ZW",
+          "name": "Facebook Graph account - Shruti"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Upload file').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        180,
+        20
+      ],
+      "id": "c4f86a48-a6a1-496c-8f3a-c9b10d8664ae",
+      "name": "Download file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "njD5eYCaxfv35lAX",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "75fa6a8d-3e64-4e6b-b204-320f4b56debf",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -40,
+        120
+      ],
+      "id": "7fba7c4b-56d3-4255-9762-619fceae8ca7",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "7975478261",
+        "message": "=data",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -500,
+        120
+      ],
+      "id": "5afe758a-968d-4b4d-a8e0-9247860051fc",
+      "name": "approve/reject",
+      "webhookId": "611e9563-a512-415f-ba88-75270fb00807",
+      "credentials": {
+        "telegramApi": {
+          "id": "M5TtEcvESPyZpcd6",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "4XwiXn4SbHGx7ocp",
+          "mode": "list",
+          "cachedResultName": "Team1_Throbalance_freeversion with condition"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        180,
+        220
+      ],
+      "id": "6963d279-77f7-4ce6-8f52-eaeea3def248",
+      "name": "Execute Workflow"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -280,
+        120
+      ],
+      "id": "14e27b12-785e-4075-9bd4-c05f7d3cae7e",
+      "name": "Wait",
+      "webhookId": "6b59f7b0-bd72-4ba8-832c-661cee8fa809"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1840,
+        -80
+      ],
+      "id": "945d9baa-ff79-4e4f-925c-372ed2c03253",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "njD5eYCaxfv35lAX",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2060,
+        -80
+      ],
+      "id": "bc126ab8-889f-46b7-af29-a38b3b0d69e2",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "njD5eYCaxfv35lAX",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v22.0",
+        "node": "710467555489754",
+        "edge": "photos",
+        "sendBinaryData": true,
+        "binaryPropertyName": "data",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "message",
+                "value": "={{ $json.hook }}\n{{ $json.tip }}\n{{ $json.cta }}"
+              },
+              {
+                "name": "published",
+                "value": "true"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -160
+      ],
+      "id": "507aa47d-9dc9-412d-8ebf-3426a38c8112",
+      "name": "Facebook Graph API1",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "XaCLsORSaW1Qq9ZW",
+          "name": "Facebook Graph account - Shruti"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Upload file').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -940,
+        120
+      ],
+      "id": "8fc21a8f-1753-4663-9b9f-bbf4478986eb",
+      "name": "Download file2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "njD5eYCaxfv35lAX",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -5460,
+        140
+      ],
+      "id": "60052b98-5641-48cb-b57c-ffbee30099de",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -5240,
+        140
+      ],
+      "id": "dbf370ad-b43e-4bfb-bf15-01a8618eeb48",
+      "name": "Wait1",
+      "webhookId": "9026aaca-62fe-459e-bf70-1c4805b72ec4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hcti.io/v1/image",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "html",
+              "value": "={{$json.html}}"
+            },
+            {
+              "name": "viewport_width",
+              "value": "1080"
+            },
+            {
+              "name": "viewport_height",
+              "value": "1080"
+            },
+            {
+              "name": "device_scale",
+              "value": "2"
+            },
+            {
+              "name": "ms_delay",
+              "value": "200"
+            },
+            {
+              "name": "format",
+              "value": "png"
+            },
+            {
+              "name": "google_fonts",
+              "value": "Poppins:400,600,700"
+            },
+            {
+              "name": "css",
+              "value": "={{$json.css}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2520,
+        -80
+      ],
+      "id": "2c047a68-79f4-42d1-9bc7-f4266fd9a792",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "H0JEqc17ena9K8Ei",
+          "name": "HCTI API (HTML to Image)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2280,
+        -80
+      ],
+      "id": "583b02b3-3899-4be7-8db4-a87f7da1b541",
+      "name": "Download ThyroBalance Image"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { heading, subheading, link, bottompart, dataUri } = $json;\n\nconst css = `\n  * { box-sizing: border-box; }\n  body { margin:0; width:1080px; height:1080px; font-family: 'Poppins', Arial, sans-serif; }\n  .canvas { position:relative; width:1080px; height:1080px; overflow:hidden; }\n  .border { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }\n  .panel {\n    position:absolute; inset:60px;\n    background:#fff; border-radius:24px; padding:48px; \n    display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;\n    gap:18px; box-shadow:0 8px 24px rgba(0,0,0,.08);\n  }\n  h1 { margin:0; font-size:64px; line-height:1.1; font-weight:800; }\n  .subheading {\n    font-size:48px;\n    line-height:1.35;\n    font-weight:700;\n  }\n  .link {\n    font-size:48px;\n    line-height:1.2;\n    font-weight:600;\n    color:#333;\n    text-decoration:none;\n  }\n  .bottom { margin-top:16px; font-size:26px; opacity:.8; }\n`;\n\nconst html = `\n<!doctype html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<link href=\"https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;800&display=swap\" rel=\"stylesheet\">\n<style>${css}</style>\n</head>\n<body>\n  <div class=\"canvas\">\n    <img class=\"border\" src=\"${dataUri}\" alt=\"border\"/>\n    <div class=\"panel\">\n      <h1>${heading ?? ''}</h1>\n      <div class=\"subheading\">${subheading ?? ''}</div>\n      <div class=\"link\">${link ?? ''}</div>\n      <div class=\"bottom\">${bottompart ?? ''}</div>\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn {\n  json: { ...$json, html, css, dataUri },\n  binary: $binary,\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3180,
+        500
+      ],
+      "id": "1d8eacea-68d7-484a-ba40-826842fcc4a8",
+      "name": "Dynamic Content Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mode: Run Once for All Items\n\nconst items = $input.all();\n\nconst esc = (s) => String(s ?? '')\n  .replaceAll('&','&amp;').replaceAll('<','&lt;')\n  .replaceAll('>','&gt;').replaceAll('\"','&quot;').replaceAll(\"'\", '&#39;');\n\nreturn await Promise.all(items.map(async (item, idx) => {\n  // 1) Ensure we have a dataUri\n  let dataUri = item.json?.dataUri;\n  if (!dataUri) {\n    const keys = item.binary ? Object.keys(item.binary) : [];\n    if (!keys.length) throw new Error(`Item ${idx}: No binary and no dataUri in JSON.`);\n    const prop = keys.includes('border') ? 'border' : keys.includes('data') ? 'data' : keys[0];\n    const buf = await this.helpers.getBinaryDataBuffer(idx, prop);\n    const base64 = buf.toString('base64');\n    const mime = item.binary[prop].mimeType || 'image/png';\n    dataUri = `data:${mime};base64,${base64}`;\n  }\n\n  // 2) Read fields\n  const heading    = esc(item.json?.heading);\n  const subheading = esc(item.json?.subheading);\n  const link       = esc(item.json?.link);\n  const bottompart = esc(item.json?.bottompart);\n\n  // 3) CSS with original font sizes + bigger gaps\n  const css = `\n    * { box-sizing: border-box; }\n    html,body {\n      margin:0; width:1080px; height:1080px;\n      font-family:'Poppins', Arial, sans-serif;\n      background:transparent;\n    }\n    .canvas {\n      position:relative; width:1080px; height:1080px;\n      overflow:hidden; background:transparent;\n    }\n    .canvas::before {\n      content:\"\"; position:absolute; inset:0;\n      background-image:url(\"${dataUri}\");\n      background-position:center; background-size:cover; background-repeat:no-repeat; z-index:0;\n    }\n    .panel {\n      position:absolute; inset:0; /* fill whole canvas */\n      padding:100px;             /* ✅ more inner space from edges */\n      background:transparent;\n      display:flex; flex-direction:column;\n      justify-content:flex-start;\n      align-items:flex-start;\n      text-align:left;\n      gap:60px;                  /* ✅ much larger vertical gaps */\n      z-index:1;\n    }\n    .block { display:inline-block; align-self:flex-start; }\n    h1 { margin:0; font-size:64px; line-height:1.1; font-weight:800; }\n    .subheading { font-size:34px; line-height:1.35; font-weight:600; }\n    .link { font-size:28px; line-height:1.2; font-weight:500; color:#333; text-decoration:none; }\n    .divider {\n      width:100%; height:1px; background:#000; border:none;\n      margin:30px 0;            /* ✅ extra space above/below divider */\n      display:block;\n    }\n    .bottom { margin-top:auto; font-size:26px; opacity:.85; }\n  `;\n\n  // 4) HTML\n  const html = `\n  <!doctype html><html><head>\n  <meta charset=\"utf-8\">\n  <link href=\"https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;800&display=swap\">\n  <style>${css}</style>\n  </head><body>\n    <div class=\"canvas\">\n      <div class=\"panel\">\n        <div class=\"block\">\n          <h1>${heading ?? ''}</h1>\n          <span class=\"divider\"></span>\n        </div>\n\n        <div class=\"block\">\n          <div class=\"subheading\">${subheading ?? ''}</div>\n          <span class=\"divider\"></span>\n        </div>\n\n        <div class=\"block\">\n          <div class=\"link\">${link ?? ''}</div>\n        </div>\n\n        <div class=\"bottom\">${bottompart ?? ''}</div>\n      </div>\n    </div>\n  </body></html>\n  `;\n\n  return {\n    json: { ...(item.json ?? {}), html, css, dataUri },\n    binary: item.binary,\n  };\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2740,
+        -80
+      ],
+      "id": "e9f725e8-8c48-4e94-b691-9333c6f38c64",
+      "name": "HTML to Image Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  const hook = item.json.hook;\n  const tip = item.json.tip;\n  const cta = item.json.cta;\n\n  // Create a combined Instagram caption\n  const caption = `${hook}\\n\\n${tip}\\n\\n${cta}`;\n\n  // Attach it to output\n  item.json.caption = caption;\n}\n\nreturn $input.all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        360
+      ],
+      "id": "c80eb005-bf1a-483c-a68a-efdf9675261a",
+      "name": "Code for posting to Instagram"
+    },
+    {
+      "parameters": {
+        "content": "## Topic list for Thyroid related content",
+        "height": 540,
+        "width": 220
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4840,
+        60
+      ],
+      "typeVersion": 1,
+      "id": "d2260fd2-ce24-4651-b192-cd08cacf0db9",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Logic for fetching non-repetitive topics between executions.",
+        "height": 540,
+        "width": 200
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -5060,
+        60
+      ],
+      "typeVersion": 1,
+      "id": "7aed6f58-b4eb-41b9-862c-4542ebb50f67",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Logic for fetching non-repetitive topics between executions.",
+        "height": 540,
+        "width": 200
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4600,
+        60
+      ],
+      "typeVersion": 1,
+      "id": "36af7dc8-f57c-4e4e-926d-07e327e9ccbf",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Generate content for Thyrobalance:\n\n## Heading, Subheading, Link (for image)\n\n## Hook, Tip, CTA for the post.",
+        "height": 640,
+        "width": 300
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4380,
+        -40
+      ],
+      "typeVersion": 1,
+      "id": "85bc11d8-ea48-4f0b-b1c2-0aa42c3a48fb",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Generate image with a subtle background",
+        "height": 740,
+        "width": 300
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3780,
+        -280
+      ],
+      "typeVersion": 1,
+      "id": "9eff7601-a8bc-439e-acae-956418233b1d",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Create HTML with content text and background",
+        "height": 380,
+        "width": 280
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3260,
+        360
+      ],
+      "typeVersion": 1,
+      "id": "f4262ca7-2d0d-484a-b929-66ecf5cf62b3",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Gemini API for Image generation",
+        "height": 480
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3460,
+        -280
+      ],
+      "typeVersion": 1,
+      "id": "b4a24ff4-4b2c-43f3-a11e-4c6fd6f38725",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## External API hcti.io for converting HTML to image (with content and background)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNeed to create an account \nhttps://docs.htmlcsstoimage.com/getting-started/using-the-api/\n\n\n\nHas 50 free images per month per account.",
+        "height": 740,
+        "width": 260
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2600,
+        -340
+      ],
+      "typeVersion": 1,
+      "id": "674e775c-10d7-4b37-8eb6-0a6a0cc6ede1",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "7975478261",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -700,
+        120
+      ],
+      "id": "04afa328-8bbc-43ce-b0b0-cccb1312aafc",
+      "name": "Send photo to Tim",
+      "webhookId": "e89ddc40-9d95-4139-9ff5-085e863ac244",
+      "credentials": {
+        "telegramApi": {
+          "id": "M5TtEcvESPyZpcd6",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Send the image and content to Telegram. \n## Need to add the proper chat ID along with credentials",
+        "height": 540,
+        "width": 220
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1220,
+        -200
+      ],
+      "typeVersion": 1,
+      "id": "39a78503-6440-482a-837e-250e463a4547",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## Send the image and content to Telegram for approval/rejection. \n## Need to add the proper chat ID along with credentials",
+        "height": 660
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -760,
+        -220
+      ],
+      "typeVersion": 1,
+      "id": "ad6343da-81d3-4bdf-a34d-8ab4efe38347",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "## IF approved then post to Facebook/Instagram pages\n## If Rejected, then execute workflow once more and generate another image.",
+        "height": 680
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -100,
+        -240
+      ],
+      "typeVersion": 1,
+      "id": "e6d9955d-7933-46b5-893f-60dd3bf071c7",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2960,
+        -80
+      ],
+      "id": "8c342d09-6917-40b2-bb66-5dd875de3753",
+      "name": "Merge Content+Image"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1620,
+        40
+      ],
+      "id": "ddf3bd5e-4488-4edc-af0d-ab2caf085101",
+      "name": "Merge Content+Image1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        640,
+        260
+      ],
+      "id": "6044210e-346b-4761-b2bb-736ad304166d",
+      "name": "Merge Content+Image2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        400,
+        -160
+      ],
+      "id": "d77287e8-24ed-45a1-84f8-2714b0fe2e0a",
+      "name": "Merge Content+Image3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Fetch lastIndex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Random topic selection": {
+      "main": [
+        [
+          {
+            "node": "update fetched lastIndex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch lastIndex": {
+      "main": [
+        [
+          {
+            "node": "Random topic selection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update fetched lastIndex": {
+      "main": [
+        [
+          {
+            "node": "Content Generating AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Content Generating AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code to extract hook, tip, CTA": {
+      "main": [
+        [
+          {
+            "node": "Image Generating AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code for posting to Instagram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Content+Image1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dynamic Content Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Image Generating AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Generating AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code to extract hook, tip, CTA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Generating AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Gemini API HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini API HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Merge Content+Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format before sending to Telegram": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Numpy server Hosting": {
+      "main": [
+        [
+          {
+            "node": "Merge Content+Image2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "instagram upload": {
+      "main": [
+        [
+          {
+            "node": "instagram publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file1": {
+      "main": [
+        [
+          {
+            "node": "Numpy server Hosting",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Content+Image3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Download file1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "approve/reject": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a photo message": {
+      "main": [
+        [
+          {
+            "node": "Download file2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Merge Content+Image1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Fetch lastIndex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Download ThyroBalance Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download ThyroBalance Image": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dynamic Content Code": {
+      "main": [
+        [
+          {
+            "node": "Merge Content+Image",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTML to Image Code": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code for posting to Instagram": {
+      "main": [
+        [
+          {
+            "node": "Merge Content+Image2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Download file2": {
+      "main": [
+        [
+          {
+            "node": "Send photo to Tim",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send photo to Tim": {
+      "main": [
+        [
+          {
+            "node": "approve/reject",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Content+Image": {
+      "main": [
+        [
+          {
+            "node": "HTML to Image Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Content+Image1": {
+      "main": [
+        [
+          {
+            "node": "Format before sending to Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Content+Image3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Content+Image2": {
+      "main": [
+        [
+          {
+            "node": "instagram upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Content+Image3": {
+      "main": [
+        [
+          {
+            "node": "Facebook Graph API1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2c54ba35-3e86-4400-8177-f52cb30265af",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "407de9db00671703379a4dfeb67fbb110f983bfab96d143fad07ef3314c650b4"
+  },
+  "id": "HCXlvI29U7mNfPZs",
+  "tags": []
+}
