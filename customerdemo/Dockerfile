@@ -1,5 +1,5 @@
 # Stage 1: Build the JAR
-FROM maven:3.9.2-eclipse-temurin-21 AS build
+FROM FROM FROM maven:3.9.2-jdk-21 AS build
 
 # Set working directory
 WORKDIR /app
