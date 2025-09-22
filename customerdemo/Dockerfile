@@ -1,5 +1,5 @@
 # Stage 1: Build the JAR
-FROM maven:3.9.2-jdk-21 AS build
+FROM maven:3.9.2-eclipse-temurin-17 AS build
 
 # Set working directory
 WORKDIR /app
@@ -12,7 +12,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Stage 2: Runtime image
-FROM eclipse-temurin:21-jdk-alpine
+FROM eclipse-temurin:17-jdk-alpine
 
 # Set working directory
 WORKDIR /app
