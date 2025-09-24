@@ -2,7 +2,7 @@ spring:
   application: 
     name: customerdemo
   datasource:
-    url: jdbc:postgresql://localhost:5432/Customerdb
+    url: jdbc:postgresql://host.docker.internal:5432/Customerdb
     username: postgres
     password: POSTGRESQL1980
     driver-class-name: org.postgresql.Driver
