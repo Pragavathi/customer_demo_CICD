@@ -1,6 +1,5 @@
 # Stage 1: Build the JAR
-FROM FROM maven:3.9.2-jdk-21 AS build
-
+FROM maven:3.9.2-eclipse-temurin-17 AS build
 
 # Set working directory
 WORKDIR /app
@@ -13,7 +12,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Stage 2: Runtime image
-FROM eclipse-temurin:21-jdk-alpine
+FROM eclipse-temurin:17-jdk-alpine
 
 # Set working directory
 WORKDIR /app
@@ -22,7 +21,7 @@ WORKDIR /app
 COPY --from=build /app/target/customerdemo-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose port your app runs on
-EXPOSE 8080
+EXPOSE 8085
 
 # Run the Spring Boot app
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
