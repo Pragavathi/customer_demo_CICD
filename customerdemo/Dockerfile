@@ -24,4 +24,4 @@ COPY --from=build /app/target/customerdemo-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8085
 
 # Run the Spring Boot app
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-jar", "/app/app.jar"]
