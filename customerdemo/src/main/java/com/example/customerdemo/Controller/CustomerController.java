@@ -15,7 +15,7 @@ public class CustomerController {
     @Autowired
     private CustomerService customerService;
 
-    // Get all customers from db
+    // Get all customers from postgresdb
     @GetMapping
     public List<CustomerDTO> getAllCustomers() {
         return customerService.getAllCustomers();
