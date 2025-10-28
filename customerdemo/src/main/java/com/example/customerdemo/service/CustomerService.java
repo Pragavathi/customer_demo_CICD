@@ -20,7 +20,7 @@ public class CustomerService {
     @Autowired
     private CustomerMapper customerMapper;
 
-    // Get all customer details
+    // Get all customers
     public List<CustomerDTO> getAllCustomers() {
         return customerMapper.toDTOList(customerRepository.findAll());
     }
