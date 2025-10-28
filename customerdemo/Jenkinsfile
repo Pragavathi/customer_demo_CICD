@@ -1,0 +1,57 @@
+pipeline {
+    agent any
+      tools {
+        maven 'maven3.9.2'
+    }
+    environment {
+        GIT_REPO = "https://github.com/Pragavathi/customer_demo_CICD.git"
+        IMAGE_NAME = "customerdemo"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        CONTAINER_NAME = "customer"
+        APP_PORT = "8085"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Cloning repository ${GIT_REPO} for environment ${params.ENVIRONMENT}..."
+                git branch: 'main', credentialsId: 'cusomerdemo_01', url: "${GIT_REPO}"
+            }
+        }
+         stage('Maven Test') {
+            steps {
+                echo "Running Maven tests..."
+                // 'mvn' is now automatically available in PATH due to tools{}
+                 bat "cd customerdemo && mvn test"
+            }
+        }
+
+        stage('Stop & Remove Existing Container') {
+            steps {
+                echo "Stopping and removing container '${CONTAINER_NAME}' if it exists..."
+                bat "docker rm -f ${CONTAINER_NAME} || echo Container not found, skipping"
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo "Building Docker image ${IMAGE_NAME}:${IMAGE_TAG}..."
+                bat "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ./customerdemo"
+            }
+        }
+
+        stage('Run Container') {
+            steps {
+                echo "Running container '${CONTAINER_NAME}' on port ${APP_PORT}..."
+                bat "docker run -d -p ${APP_PORT}:${APP_PORT} --name ${CONTAINER_NAME} ${IMAGE_NAME}:${IMAGE_TAG}"
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline completed for environment: ${params.ENVIRONMENT}"
+            echo "Container '${CONTAINER_NAME}' is running image ${IMAGE_NAME}:${IMAGE_TAG} on port ${APP_PORT}."
+        }
+    }
+}
