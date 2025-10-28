@@ -39,7 +39,7 @@ public class CustomerService {
         return customerMapper.toDTO(saved);  // Entity → DTO
     }
 
-    // Update an existing customer (accepts DTO)
+    // Update an existing customer (accepts DTO
     public CustomerDTO updateCustomer(Long id, CustomerDTO updatedCustomerDto) {
         if (!customerRepository.existsById(id)) {
             throw new CustomerNotFoundException(id);
